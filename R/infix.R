@@ -48,7 +48,7 @@
   x
 }
 
-#' Shortcut for paste0
+#' Concatenate strings python style
 #'
 #' Equivalent to python's string concatenation via + operator
 #'
