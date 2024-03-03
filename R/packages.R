@@ -54,7 +54,7 @@ pkg_vload <- function(..., reload = FALSE, path = .libPaths(), repos = getOption
     if (reload | !pkgs$available[i] | pkgs$pkg_version[i] != packageVersion(pkgs$pkg_name[i])) {
       tryCatch(
         {
-          devtools::unload(pkgs$pkg_name[i])
+          pkgload::unload(pkgs$pkg_name[i])
         },
         error = function(e) {
           invisible(NULL)
@@ -103,6 +103,58 @@ pkg_vload <- function(..., reload = FALSE, path = .libPaths(), repos = getOption
   }
   return(invisible(NULL))
 }
+
+
+#' Switch the default version of a package
+#'
+#' [pkg_switch_default()] renames the folder of the default version of a package
+#' to pkg-version and renames the folder of the new default version to pkg. This
+#' allows the user to switch between different versions of the same package that
+#' are loaded by the default call to `library()`.
+#'
+#' @param pkg The name of the package
+#' @param new_default_version The version of the package to be set as the default
+#' @param path A character vector of paths to search for the package. Default is
+#'  the default library paths.
+#'
+#' @return Invisible `TRUE` if the default version was successfully switched, `FALSE`
+#' otherwise.
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # install two versions of the xfun package
+#' pkg_vload(stringr, stringr('1.0.0'))
+#' # switch the default version of xfun to 0.2.0
+#' pkg_switch_default("stringr", "1.0.0")
+#'}
+pkg_switch_default <- function(pkg, new_default_version, path = .libPaths()) {
+  tryCatch({pkgload::unload(pkg)}, error = function(e) {
+    stop2("The package ", pkg, " could not be unloaded. Please restart R and try again.")
+  })
+  def_path <- dirname(find.package(pkg, lib.loc = path))
+  if (!dir.exists(file.path(def_path, paste0(pkg, "-", new_default_version)))) {
+    message("The specified new version of ", pkg, " is not available in the library. You can install it first via pkg_vload()")
+    return(invisible(FALSE))
+  }
+  old_version <- packageVersion(pkg)
+  move_path <- file.path(def_path, paste0(pkg, "-", old_version))
+  xfun::dir_create(move_path)
+  new_path <- file.path(def_path, paste0(pkg, "-", new_default_version),pkg)
+  copied <- file.copy(file.path(def_path, pkg), move_path, recursive = TRUE)
+  if (copied) {
+    unlink(file.path(def_path, pkg), recursive = TRUE, force = TRUE)
+    copied = file.copy(new_path, def_path, recursive = TRUE)
+    if (copied) {
+      unlink(file.path(def_path, paste0(pkg, "-", new_default_version)), recursive = TRUE, force = TRUE)
+    }
+    message("The default version of ", pkg, " has been switched to ", new_default_version,
+            ". The previous default version has been renamed to ", paste0(pkg, "-", old_version),
+            "\nPlease restart R to complete the process.")
+  }
+  invisible(copied)
+}
+
 
 
 #' Parse package name and version from a pkg('verions') call

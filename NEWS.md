@@ -9,6 +9,7 @@
 * add require_pkg() function which checks if one or more packages are installed and if their versions are at least the specified one. If not, it gives an error message and stops the execution.
 * add pkg_vavailable() function which is is an alternative to [xfun::pkg_available()] that checks for a specific version of the package rather than a minimal version. 
 * add available_packages() function which returns a simple character vector of all installed packages, including specific multiple versions created by pkg_vload()
+* add pkg_switch_default() function which switches the default version of a package to the specified one
 
 
 # Vmisc 0.1.0
