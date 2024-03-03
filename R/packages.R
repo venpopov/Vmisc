@@ -1,3 +1,276 @@
+#' Load and/or install packages with specific versions
+#'
+#' pkg_vload() attempts to load a package and, if it is not available, installs
+#' it. It can also install a specific version of a package. If the package is
+#' already installed, it will check if the version is the same as the one
+#' specified in the call. If the version is different, it will attempt to unload
+#' the package and install the specified version in a separate library, allowing
+#' the user to have multiple versions of the same package installed at the same
+#' time.
+#'
+#' @param ... One or more calls to the package name with version (if desired).
+#'   The calls should be of the form `pkg('version')` where `pkg` is the package
+#'   name and `version` is the version number. If the version is not specified,
+#'   the function will check for the default version of the package.
+#' @param reload Logical. If `TRUE`, the function will attempt to unload the
+#'   package and load it again, regardless of whether the version is the same as
+#'   the one specified in the call. Default is `FALSE`. If the package is
+#'   already loaded, it will be reloaded even if reload is `FALSE`, if the
+#'   specified version is different from the one currently loaded.
+#' @param path A character vector of paths to search for the package. Default is
+#'   the default library paths.
+#' @param repos A character vector of repository URLs to use for installing the
+#'   package. Default is the value of `getOption("repos")`.
+#' @param install_args A list of additional arguments to be passed to
+#'   `install.packages()` or `remotes::install_version()`. Default is `NULL`.
+#' @return This function does not return a value. Instead, it will stop the
+#'  execution and display a message if the requirements are not met.
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Load the 'brms' package and install version 2.0.0 if it is not available
+#' pkg_vload(brms("2.0.0"))
+#'
+#' # Load multiple packages and install specific versions if they are not available
+#' pkg_vload(brms("2.0.0"), utils)
+#' }
+pkg_vload <- function(..., reload = FALSE, path = .libPaths(), repos = getOption("repos"), install_args = NULL) {
+  pkgs <- pkg_vavailable(..., path = path)
+  if (any(!is.na(pkgs$pkg_version))) {
+    require_pkg("remotes",
+                message_prefix = "Installing specific versions of packages" %+%
+                " requires you to first install:")
+  }
+
+
+  npkgs <- length(pkgs$pkg_name)
+  for (i in 1:npkgs) {
+    if (pkgs$pkg_folder[i] == pkgs$pkg_name[i]) {
+      install_path <- path
+    } else {
+      install_path <- pkgs$path[i]
+    }
+    if (reload | !pkgs$available[i] | pkgs$pkg_version[i] != packageVersion(pkgs$pkg_name[i])) {
+      tryCatch(
+        {
+          devtools::unload(pkgs$pkg_name[i])
+        },
+        error = function(e) {
+          invisible(NULL)
+        },
+        warning = function(w) {
+          invisible(NULL)
+        }
+      )
+    }
+
+    if (pkgs$available[i]) {
+      require(pkgs$pkg_name[i], lib.loc = install_path, character.only = TRUE)
+    } else {
+      tryCatch(
+        {
+          xfun::dir_create(install_path)
+          if (is.na(pkgs$pkg_version[i])) {
+            args <- c(list(pkgs = pkgs$pkg_name[i],
+                           lib = install_path,
+                           dependencies = TRUE,
+                           repos = repos),
+                      install_args)
+            do.call('install.packages', args)
+          } else {
+            args <- c(list(package = pkgs$pkg_name[i],
+                           lib = install_path,
+                           dependencies = TRUE,
+                           repos = repos,
+                           version = pkgs$pkg_version[i]),
+                      install_args)
+            do.call(remotes::install_version, args)
+          }
+          require(pkgs$pkg_name[i], lib.loc = install_path, character.only = TRUE)
+        },
+        error = function(e) {
+          warning2(
+            "\nPackage ", pkgs$pkg_name[i], " could not be installed. The attempt",
+            " returned the following error: \n", e
+          )
+          if (is_dir_empty(install_path)) {
+            unlink(install_path, recursive = TRUE, force = TRUE)
+          }
+        }
+      )
+    }
+  }
+  return(invisible(NULL))
+}
+
+
+#' Parse package name and version from a pkg('verions') call
+#'
+#' @param ... a number of calls to objects of type pkg('version') where pkg is
+#'   the package name and version is the version number
+#'
+#' @return A list with two elements: names and versions. The names are the package
+#'  names and the versions are of class 'package_version'. If the version is not
+#'  specified, the version will be NA.
+#' @export
+#'
+#' @examples
+#' parse_pkg_version(brms("2.20.4"), bmm("0.4-0"), utils)
+parse_pkg_version <- function(...) {
+  x <- arg2string(...)
+  names <- gsub("\\(.*", "", x)
+  versions_str <- stringr::str_extract(x, "\\d+(\\.|\\-)\\d+(\\.|\\-)\\d+")
+  versions <- package_version(versions_str, strict = FALSE)
+  nchar_ver <- ifelse(is.na(versions_str), 0, nchar(versions_str)+4)
+  cant_parse <- (nchar(names) + nchar_ver) != nchar(x)
+  if (any(cant_parse)) {
+    stop2("Invalid version format: ", paste0((x[cant_parse]), collapse=", "))
+  }
+  nlist(names, versions)
+}
+
+is.named <- function(x) {
+  !is.null(names(x))
+}
+
+
+#' Check Required Packages and Their Versions
+#'
+#' This function checks if the required R packages are available and if their
+#' versions meet the specified minimum requirements. It will stop the execution
+#' and display a message if any required package is missing or does not meet
+#' the version requirement.
+#'
+#' @param ... Variable arguments representing required package names and,
+#' optionally, their minimum versions. The versions should be specified
+#' immediately after the package names, in the format `packageName(version)`.
+#' @param message_prefix A character string to be displayed before the message
+#' if the requirements are not met.
+#'
+#' @return This function does not return a value. Instead, it will stop
+#' the execution and display a message if the requirements are not met.
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Check if 'dplyr' and 'ggplot2' are installed (any versions):
+#' require_pkg(dplyr, ggplot2)
+#'
+#' # Check if 'dplyr' (version 1.0.0 or higher) and 'ggplot2' (version 8.3.0 or higher) are installed:
+#' require_pkg(dplyr('1.0.0'), ggplot2('8.3.0'))
+#' }
+require_pkg <- function(..., message_prefix = "Please install the following packages:") {
+  pkgs <- pkg_vavailable(..., exact = FALSE)
+  available <- pkgs$available
+  min_available <-
+  required_version <- pkgs$pkg_version_specified
+  m <- c()
+  for (i in 1:length(available)) {
+    if (!available[i] || isTRUE(required_version[i] > packageVersion(pkgs$pkg_name[i]))) {
+      if (is.na(required_version[i])) {
+        m <- c(m, paste0("   ", pkgs$pkg_name[i], "\n"))
+      } else {
+        m <- c(m, paste0("   ", pkgs$pkg_name[i], " (version ", required_version[i], " or higher)\n"))
+      }
+    }
+  }
+  if (length(m) > 0) {
+    stop2(message_prefix, "\n", collapse(m))
+  }
+}
+
+#' Check if a specific package version is available in the library
+#'
+#' [pkg_vavailable()] is an alternative to [xfun::pkg_available()] that checks
+#' for a specific version of the package rather than a minimal version. If the
+#' version is not specified, the function will check for the default version of
+#' the package.
+#'
+#' @param ... One or more calls to the package name with version (if desired)
+#'   specified in parantheses. E.g. brms("2.14.4") or brms or "brms"
+#'
+#' @param path A character vector of paths to search for the package. Default is
+#'   the default library paths.
+#' @param exact Logical. If `TRUE`, the function will only return `TRUE` if the
+#'  exact version is available. If `FALSE`, the function will return `TRUE` if
+#'  the version is available or if a higher version is available. Default is `TRUE`.
+#' @return a named list with the following elements:
+#'  - available: A logical vector indicating whether the package is available
+#'  - pkg_name: The name of the package
+#'  - pkg_version: The version of the package in the library
+#'  - pkg_version_specified: The version of the package specified in the call to pkg('version')
+#'  - pkg_folder: The folder name of the package in the library
+#' @details To check for a specific version, the function assumes that this
+#'   version was installed using pkg_load(pkg(version)), which has
+#'   created a folder named "pkg-version" in the library.
+#' @export
+#' @examples
+#' \dontrun{
+#' pkg_vavailable(utils)
+#' pkg_vavailable(xfun("0.1.0"))
+#' pkg_vavailable(utils, brms("2.14.4"), xfun("0.1.0"))
+#'
+#' # compare with xfun::pkg_available()
+#' xfun::pkg_available("xfun", "0.1.0") # returns TRUE
+#' }
+pkg_vavailable <- function(..., path = .libPaths(), exact = TRUE) {
+  pkgs <- parse_pkg_version(...)
+  names <- pkgs[["names"]]
+  versions <- pkgs[["versions"]]
+  default_versions <- sapply(seq_along(names), function(i) {
+    tryCatch(
+      {
+        packageVersion(names[i], lib.loc = path)
+      },
+      error = function(e) {
+        package_version(NA, strict = FALSE)
+      }
+    )
+  })
+  class(default_versions) <- c("package_version", "numeric_version")
+  is_default <- is.na(versions) | is.na(default_versions) | default_versions == versions
+  if (!exact) {
+    is_default <- is.na(versions) | is.na(default_versions) | versions <= default_versions
+  }
+  affix <- sapply(seq_along(versions), function(x) ifelse(is_default[x], "", paste0("-", versions[x])))
+  pkg_folder <- paste0(names, affix)
+  paths <- c()
+  for (pkg in pkg_folder) {
+    where <- path[dir.exists(file.path(path, pkg))]
+    if (length(where) == 0) {
+      where <- path[1]
+    }
+    paths <- c(paths, file.path(where, pkg))
+  }
+  available <- pkg_folder %in% available_packages(path)
+
+  versions[is_default] <- default_versions[is_default]
+  out <- list(available = available,
+              pkg_name = names,
+              pkg_version = versions,
+              pkg_version_specified = pkgs[["versions"]],
+              pkg_folder = pkg_folder,
+              path = paths)
+  out
+}
+
+#' A character vector of available packages in the library
+#'
+#' @param path A character vector of paths to search for the package. Default is
+#'   the default library paths.
+#'
+#' @return A character vector of available package names in the library. If any
+#'  package versions were installed via pkg_vload(), the version will be shown as
+#'  "pkg-version"
+#' @export
+available_packages <- function(path = .libPaths()) {
+  libs_full <- dir(path, full.names = TRUE)
+  libs <- basename(libs_full)
+  libs[!is_dir_empty(libs_full) & !(libs %in% c(".", ".."))]
+}
+
+
 #' View the current or default global options for a package
 #'
 #' [packageOptions()] scrapes the source code of a package to find all calls to
@@ -25,7 +298,7 @@
 #' @export
 #' @import utils
 #' @examples
-#' packageOptions('utils')
+#' packageOptions("utils")
 packageOptions <- function(pkg, own_only = FALSE, max_length = 50, show_defaults = FALSE) {
   opts <- extract_pkg_fun_calls(pkg, "getOption")
   # assuming options without defaults are not user-facing but only used internally
@@ -98,7 +371,7 @@ extract_pkg_fun_calls <- function(pkg, fun) {
   funs <- utils::lsf.str(nmsp)
   fcode <- c()
   for (f in funs) {
-    code <- deparse1(get(f, envir = nmsp),collapse = "\n")
+    code <- deparse1(get(f, envir = nmsp), collapse = "\n")
     fcode <- c(fcode, code)
   }
   attr(fcode, "source") <- funs

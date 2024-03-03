@@ -36,5 +36,5 @@ Initial running time might be slow if a package contains a large amount of
 code. Repeated calls to the function will be significantly faster.
 }
 \examples{
-packageOptions('utils')
+packageOptions("utils")
 }

@@ -1,3 +1,16 @@
+# Vmisc 0.1.5
+
+### New features
+* add nlist() function to create a named list
+* add is_dir_empty() function to check if a directory is empty
+* add arg2string() to defuse a function's arguments into strings
+* add pkg_vload() function which can load and/or install a specific version of multiple packages. This function takes calls to packages of the form pkg(version), e.g. dplyr('1.0.0').
+* add parse_pkg_version() function that parses calls such as dplyr('1.0.0') into a list with package names and versions
+* add require_pkg() function which checks if one or more packages are installed and if their versions are at least the specified one. If not, it gives an error message and stops the execution.
+* add pkg_vavailable() function which is is an alternative to [xfun::pkg_available()] that checks for a specific version of the package rather than a minimal version. 
+* add available_packages() function which returns a simple character vector of all installed packages, including specific multiple versions created by pkg_vload()
+
+
 # Vmisc 0.1.0
 
 ### New features

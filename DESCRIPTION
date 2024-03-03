@@ -1,6 +1,6 @@
 Package: Vmisc
 Title: Various functions for personal use
-Version: 0.1.0
+Version: 0.1.5
 Authors@R: 
     person("Vencislav", "Popov", , "vencislav.popov@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-8073-4199"))
@@ -11,7 +11,11 @@ BugReports: https://github.com/venpopov/Vmisc/issues
 Imports: 
     stringr,
     tools,
-    utils
+    utils,
+    xfun,
+    rlang,
+    devtools,
+    remotes
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
