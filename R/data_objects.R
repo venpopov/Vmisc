@@ -36,3 +36,34 @@ nlist <- function(...) {
   }
   dots
 }
+
+
+#' Report Space Allocated for the Components of a List
+#'
+#' @param x A list object
+#' @param units A string specifying the units to use for the size. Default is "auto".
+#'
+#' @return A list with the same names as the input list, where each element is the size
+#' @export
+#'
+#' @examples
+#' x <- list(a = 1:10, b = 1:100)
+#' component_size(x)
+component_size <- function(x, units = "auto") {
+  stopifnot(is.list(x))
+  sizes <- structure(lapply(x, utils::object.size),
+                     class = "component_size",
+                     units = units)
+  sizes
+}
+
+#' @export
+print.component_size <- function(x, units, ...) {
+  if (missing(units)) {
+    units = attr(x, "units")
+  }
+  for (i in seq_along(x)) {
+    size <- utils::capture.output(print(x[[i]], units = units))
+    cat(names(x)[i], ":", size, "\n")
+  }
+}

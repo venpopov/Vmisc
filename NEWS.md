@@ -1,3 +1,8 @@
+# Vmisc 0.1.5 +
+
+### New features
+* add component_size() function to get the space allocated to a component in a list 
+
 # Vmisc 0.1.5
 
 ### New features
