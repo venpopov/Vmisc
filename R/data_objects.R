@@ -49,11 +49,36 @@ nlist <- function(...) {
 #' @examples
 #' x <- list(a = 1:10, b = 1:100)
 #' component_size(x)
+#' @importFrom("methods", "slot", "slotNames")
 component_size <- function(x, units = "auto") {
-  stopifnot(is.list(x))
+  UseMethod("component_size")
+}
+
+#' @export
+component_size.list <- function(x, units = "auto", ...) {
   sizes <- structure(lapply(x, utils::object.size),
                      class = "component_size",
                      units = units)
+  sizes
+}
+
+#' @export
+component_size.default <- function(x, units = "auto", ...) {
+  if (isS4(x)) {
+    return(.component_size.S4(x, units))
+  }
+  if (is.list(x)) {
+    return(component_size.list(x, units))
+  }
+  NULL
+}
+
+.component_size.S4 <- function(x, units, ...) {
+  slots <- slotNames(x)
+  sizes <- structure(lapply(slots, function(i) utils::object.size(slot(x, i))),
+                     class = "component_size",
+                     units = units)
+  names(sizes) <- slots
   sizes
 }
 
