@@ -62,8 +62,11 @@ print.component_size <- function(x, units, ...) {
   if (missing(units)) {
     units = attr(x, "units")
   }
+
+  max_name_length <- max(nchar(names(x)))
+
   for (i in seq_along(x)) {
     size <- utils::capture.output(print(x[[i]], units = units))
-    cat(names(x)[i], ":", size, "\n")
+    cat(paste0(names(x)[i], ":", collapse(rep(" ", max_name_length - nchar(names(x[i]))+2)), size, "\n"))
   }
 }
