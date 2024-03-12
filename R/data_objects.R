@@ -49,7 +49,7 @@ nlist <- function(...) {
 #' @examples
 #' x <- list(a = 1:10, b = 1:100)
 #' component_size(x)
-#' @importFrom("methods", "slot", "slotNames")
+#' @importFrom methods slot slotNames
 component_size <- function(x, units = "auto") {
   UseMethod("component_size")
 }
