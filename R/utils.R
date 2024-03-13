@@ -61,3 +61,18 @@ warning2 <- function(...) {
   warning(paste0(...), call. = FALSE)
 }
 
+#' Wrapper around stopifnot allowing for a custom error message
+#'
+#' @param ... zero or more expressions to be evaluated
+#' @param msg a custom error message to be printed if the expressions are not
+#'  all true
+#' @export
+stopifnot2 <- function(..., msg = NULL) {
+  if (is.null(msg)) {
+    eval.parent(substitute(stopifnot(exprs = ...)))
+  }
+  if (!all(...)) {
+    stop2(msg)
+  }
+}
+

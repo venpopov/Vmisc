@@ -1,6 +1,6 @@
 Package: Vmisc
 Title: Various functions for personal use
-Version: 0.1.8
+Version: 0.1.9
 Authors@R: 
     person("Vencislav", "Popov", , "vencislav.popov@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-8073-4199"))
