@@ -215,7 +215,6 @@ is.named <- function(x) {
 require_pkg <- function(..., message_prefix = "Please install the following packages:") {
   pkgs <- pkg_vavailable(..., exact = FALSE)
   available <- pkgs$available
-  min_available <-
   required_version <- pkgs$pkg_version_specified
   m <- c()
   for (i in 1:length(available)) {
