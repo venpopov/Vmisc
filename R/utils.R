@@ -88,7 +88,7 @@ stopifnot2 <- function(..., msg = NULL) {
     eval.parent(substitute(stopifnot(exprs = ...)))
   }
   if (!all(...)) {
-    stop2(msg)
+    stop2(msg, env.frame = -2)
   }
 }
 
