@@ -2,9 +2,15 @@
 % Please edit documentation in R/utils.R
 \name{stopifnot2}
 \alias{stopifnot2}
+\alias{stopif}
+\alias{warnif}
 \title{Wrapper around stopifnot allowing for a custom error message}
 \usage{
 stopifnot2(..., msg = NULL)
+
+stopif(..., msg)
+
+warnif(..., msg)
 }
 \arguments{
 \item{...}{zero or more expressions to be evaluated}

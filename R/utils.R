@@ -46,20 +46,36 @@ strip_attributes <- function(x, protect = c("names", "row.names", "class")) {
 
 #' Wrappers around `stop` and `warning` that do not print the call stack
 #'
+#' In addition they allow to use `glue` to create the error message
+#'
 #' @param ... zero or more objects which can be coerced to character (and which
 #'   are pasted together with no separator) or a single condition object
-#'
+#' @param env.frame the environment to use for the error message if you use `glue`
+#'  syntax. Default is -1, which is the calling environment
 #' @return Stops execution and prints the error message
 #' @export
 #'
-stop2 <- function(...) {
-  stop(paste0(...), call. = FALSE)
+#' @importFrom glue glue
+#'
+#' @examples
+#'
+#' \dontrun{
+#' stop2("This is an error message")
+#' x <- 1
+#' stop2("This is an error message with a variable: {x}")
+#'}
+stop2 <- function(..., env.frame = -1) {
+  msg <- glue(..., .envir = sys.frame(env.frame))
+  stop(msg, call. = FALSE)
 }
 
 #' @rdname stop2
-warning2 <- function(...) {
-  warning(paste0(...), call. = FALSE)
+#' @export
+warning2 <- function(..., env.frame = -1) {
+  msg <- glue(..., .envir = sys.frame(env.frame))
+  warning(..., call. = FALSE)
 }
+
 
 #' Wrapper around stopifnot allowing for a custom error message
 #'
@@ -75,4 +91,21 @@ stopifnot2 <- function(..., msg = NULL) {
     stop2(msg)
   }
 }
+
+#' @rdname stopifnot2
+#' @export
+stopif <- function(..., msg) {
+  if (any(...)) {
+    stop2(msg, env.frame = -2)
+  }
+}
+
+#' @rdname stopifnot2
+#' @export
+warnif <- function(..., msg) {
+  if (any(...)) {
+    warning2(msg, env.frame = -2)
+  }
+}
+
 

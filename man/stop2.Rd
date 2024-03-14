@@ -5,17 +5,28 @@
 \alias{warning2}
 \title{Wrappers around \code{stop} and \code{warning} that do not print the call stack}
 \usage{
-stop2(...)
+stop2(..., env.frame = -1)
 
-warning2(...)
+warning2(..., env.frame = -1)
 }
 \arguments{
 \item{...}{zero or more objects which can be coerced to character (and which
 are pasted together with no separator) or a single condition object}
+
+\item{env.frame}{the environment to use for the error message if you use \code{glue}
+syntax. Default is -1, which is the calling environment}
 }
 \value{
 Stops execution and prints the error message
 }
 \description{
-Wrappers around \code{stop} and \code{warning} that do not print the call stack
+In addition they allow to use \code{glue} to create the error message
+}
+\examples{
+
+\dontrun{
+stop2("This is an error message")
+x <- 1
+stop2("This is an error message with a variable: {x}")
+}
 }
