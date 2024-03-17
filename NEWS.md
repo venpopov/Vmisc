@@ -5,6 +5,7 @@
 * return_on_exit() - Evaluate a function and return the result on exit in the calling environment
 * stopifnot2() - A wrapper around stopifnot() that allows for custom error message
 * add pkg_switch_default() function which switches the default version of a package to the specified one
+* add rlang's `%||%` operator
 
 # Vmisc 0.1.5
 

@@ -68,3 +68,11 @@
 #' res <- names %+% " is " %+% ages %+% " years old"
 #' identical(res, c("John is 34 years old", "Sarah is 23 years old"))
 `%+%` <- function(a, b) paste0(a, b)
+
+
+#' @name op-null-default
+#' @inherit rlang::`%||%`
+#' @export
+`%||%` <- function(x, y) {
+  if (is.null(x)) y  else x
+}
